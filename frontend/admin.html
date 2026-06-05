@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Панель Администратора – BitePlate SRMS</title>
+    <style>
+        body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif; padding: 25px; background-color: #f1f5f9; color: #1e293b; margin: 0; }
+        h1, h2, h3 { color: #0f172a; margin-top: 0; }
+        .header { max-width: 1400px; margin: 0 auto 20px auto; display: flex; justify-content: space-between; align-items: center; }
+        
+        /* Навигация по вкладкам */
+        .tabs { max-width: 1400px; margin: 0 auto 20px auto; display: flex; gap: 10px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .tab-btn { background: #e2e8f0; border: none; padding: 10px 20px; font-weight: bold; border-radius: 6px; cursor: pointer; color: #475569; transition: all 0.2s; }
+        .tab-btn.active { background: #2563eb; color: white; }
+        .tab-content { display: none; max-width: 1400px; margin: 0 auto; }
+        .tab-content.active { display: block; }
+
+        .layout-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        .full-width { grid-column: span 2; }
+        
+        /* Таблицы */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white; }
+        th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background-color: #f8fafc; font-weight: 600; color: #64748b; font-size: 13px; text-transform: uppercase; }
+        tr.clickable { cursor: pointer; transition: background 0.2s; }
+        tr.clickable:hover { background-color: #f8fafc; }
+        
+        /* Баджи статусов */
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; display: inline-block; }
+        .badge.free { background: #d1fae5; color: #065f46; }
+        .badge.reserved { background: #dbeafe; color: #1e40af; }
+        .badge.past { background: #e2e8f0; color: #475569; }
+        .badge.future { background: #fef08a; color: #854d0e; }
+
+        /* Ингредиенты и Кнопки */
+        .stock-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
+        .stock-item { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px; border-radius: 8px; text-align: center; }
+        .stock-item.low { border-color: #f87171; background: #fef2f2; color: #991b1b; }
+        .btn { background: #2563eb; color: white; border: none; padding: 10px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn:hover { background: #1d4ed8; }
+        .btn-danger { background: #ef4444; }
+        .btn-danger:hover { background: #dc2626; }
+        .btn-secondary { background: #64748b; }
+        .btn-secondary:hover { background: #475569; }
+
+        .form-group { margin-bottom: 15px; }
+        label { font-size: 13px; font-weight: 600; color: #475569; display: block; margin-bottom: 5px; }
+        input, select, textarea { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        
+        /* Конструктор ингредиентов в рецепте */
+        .recipe-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
+        
+        /* Таймлайн истории стола */
+        .timeline-section { margin-top: 15px; border-left: 3px solid #cbd5e1; padding-left: 15px; }
+        .timeline-item { position: relative; margin-bottom: 15px; padding: 10px; background: #f8fafc; border-radius: 6px; }
+
+        .error-banner { background-color: #fef2f2; border: 1px solid #f87171; color: #991b1b; padding: 12px; border-radius: 8px; font-weight: bold; margin-bottom: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div>
+        <h1>BitePlate Enterprise Admin</h1>
+        <p style="color: #64748b; margin: 5px 0 0 0;">Управление залами, таймлайнами бронирования и CRUD-модификацией рецептов меню</p>
+    </div>
+    <button onclick="logout()" style="background:#e2e8f0; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:500;">Выйти</button>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('tables-tab')">📊 Таймлайн и Аудит Столов</button>
+    <button class="tab-btn" onclick="switchTab('meals-tab')">🍳 Конструктор Блюд (CRUD)</button>
+    <button class="tab-btn" onclick="switchTab('stock-tab')">📦 Склад и Закупки</button>
+</div>
+
+<div id="api-error" class="error-banner" style="max-width: 1400px; margin: 0 auto 15px auto;"></div>
+
+<div id="tables-tab" class="tab-content active">
+    <div class="layout-grid">
+        <div class="card">
+            <h2>Список столов ресторана</h2>
+            <p style="font-size: 13px; color:#64748b;">Выберите стол для извлечения сквозного аудита сессий (Past, Present, Future).</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Стола</th>
+                        <th>Вместимость</th>
+                        <th>Статус</th>
+                    </tr>
+                </thead>
+                <tbody id="tables-list-body">
+                    </tbody>
+            </table>
+        </div>
+        
+        <div class="card">
+            <h2>📜 Сквозной Таймлайн Стола</h2>
+            <div id="timeline-placeholder" style="color:#94a3b8; font-style:italic; padding:20px; text-align:center;">
+                Нажмите на любой стол слева для выгрузки хронологии бронирований
+            </div>
+            <div id="timeline-container" style="display:none;">
+                <h3 id="selected-table-title" style="color: #2563eb;">Хронология стола</h3>
+                
+                <h4>🕒 Текущее состояние / Ближайшее</h4>
+                <div id="timeline-present" class="timeline-section"></div>
+                
+                <h4>🚀 Будущие резервы (Future)</h4>
+                <div id="timeline-future" class="timeline-section"></div>
+                
+                <h4>⏮️ Архивные сессии (Past)</h4>
+                <div id="timeline-past" class="timeline-section"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="meals-tab" class="tab-content">
+    <div class="layout-grid">
+        <div class="card">
+            <h2>📋 Активное Меню Ресторана</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Название</th>
+                        <th>Цена</th>
+                        <th>Состав рецепта (Ингредиенты)</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody id="meals-list-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h2 id="form-meal-title">✨ Создать новое блюдо / напиток</h2>
+            <form id="meal-form" onsubmit="saveMeal(event)">
+                <input type="hidden" id="meal-id">
+                <div class="form-group">
+                    <label for="meal-name">Название блюда:</label>
+                    <input type="text" id="meal-name" required placeholder="Например: Шашлык Ассорти">
+                </div>
+                <div class="form-group">
+                    <label for="meal-price">Стоимость (сум):</label>
+                    <input type="number" id="meal-price" required placeholder="35000">
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Рецепт (Привязка ингредиентов из БД):</span>
+                        <button type="button" class="btn" style="padding:4px 8px; font-size:12px;" onclick="addIngredientRow()">+ Добавить сырье</button>
+                    </label>
+                    <div id="recipe-ingredients-container" style="margin-top:10px;">
+                        </div>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top:20px;">
+                    <button type="submit" class="btn">Сохранить позицию</button>
+                    <button type="button" class="btn btn-secondary" onclick="resetMealForm()">Очистить форму</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="stock-tab" class="tab-content">
+    <div class="layout-grid">
+        <div class="card">
+            <h2>📦 Контроль граммовок сырья</h2>
+            <div id="stock-container" class="stock-grid">
+                </div>
+        </div>
+
+        <div class="card">
+            <h2>🛒 Проведение накладной (Закупка)</h2>
+            <div class="form-group">
+                <label for="purchase-item">Ингредиент:</label>
+                <select id="purchase-item"></select>
+            </div>
+            <div class="form-group">
+                <label for="purchase-qty">Количество сырья для добавления:</label>
+                <input id="purchase-qty" type="number" placeholder="Объём в гр. / шт." min="1">
+            </div>
+            <button class="btn" style="width:100%;" onclick="executePurchase()">Зафиксировать приход в БД</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const TOKEN = localStorage.getItem('token');
+    const ROLE = localStorage.getItem('role');
+
+    if (!TOKEN || ROLE !== 'admin') {
+        window.location.href = '/login.html';
+    }
+
+    let globalStockKeys = [];
+
+    function showError(msg) {
+        const banner = document.getElementById("api-error");
+        banner.innerText = `🚨 Ошибка синхронизации данных: ${msg}`;
+        banner.style.display = "block";
+    }
+    function clearError() { document.getElementById("api-error").style.display = "none"; }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+        
+        if(tabId === 'tables-tab') loadTables();
+        if(tabId === 'meals-tab') { loadMeals(); loadStockKeysOnly(); }
+        if(tabId === 'stock-tab') loadStock();
+    }
+
+    // ================= ЛОГИКА ВКЛАДКИ 1: АУДИТ И ТАЙМЛАЙН СТОЛОВ =================
+    async function loadTables() {
+        try {
+            const res = await fetch("/api/admin/tables/audit", { headers: {"Authorization": "Bearer "+TOKEN} });
+            if(!res.ok) throw new Error("Не удалось загрузить аудит столов");
+            const data = await res.json();
+            clearError();
+            
+            const tbody = document.getElementById("tables-list-body");
+            tbody.innerHTML = data.map(table => `
+                <tr class="clickable" onclick="loadTableTimeline('${table.id}')">
+                    <td><strong>Стол №${table.id}</strong></td>
+                    <td>${table.capacity} мест</td>
+                    <td><span class="badge ${table.status === 'FREE' ? 'free' : 'reserved'}">${table.status}</span></td>
+                </tr>
+            `).join("");
+        } catch(e) { showError(e.message); }
+    }
+
+    async function loadTableTimeline(tableId) {
+        document.getElementById("timeline-placeholder").style.display = "none";
+        const container = document.getElementById("timeline-container");
+        container.style.display = "block";
+        document.getElementById("selected-table-title").innerText = `Хронология сессий Стола №${tableId}`;
+
+        try {
+            const res = await fetch(`/api/admin/tables/${tableId}/history`, { headers: {"Authorization": "Bearer "+TOKEN} });
+            if(!res.ok) throw new Error("Ошибка получения истории стола");
+            const history = await res.json();
+            
+            const renderBlock = (items, typeBadge) => {
+                if(!items || items.length === 0) return `<p style="color:#94a3b8; font-style:italic; font-size:13px;">Записей не обнаружено</p>`;
+                return items.map(b => `
+                    <div class="timeline-item">
+                        <span class="badge ${typeBadge}" style="float:right;">${b.status}</span>
+                        <strong>Дата:</strong> ${b.date} | <strong>Интервал:</strong> <code>${b.time_slot}</code><br>
+                        <strong>Клиент:</strong> <code>${b.user_id}</code> | <strong>Итого транзакции:</strong> <span style="color:#10b981;font-weight:bold;">${b.total} сум</span>
+                        <div style="margin-top:5px; font-size:12px; color:#475569;"><strong>Заказ:</strong> ${b.items}</div>
+                    </div>
+                `).join("");
+            };
+
+            document.getElementById("timeline-present").innerHTML = renderBlock(history.present, "reserved");
+            document.getElementById("timeline-future").innerHTML = renderBlock(history.future, "future");
+            document.getElementById("timeline-past").innerHTML = renderBlock(history.past, "past");
+        } catch(e) { showError(e.message); }
+    }
+
+    // ================= ЛОГИКА ВКЛАДКИ 2: CRUD MEALS & RECIPES =================
+    async function loadMeals() {
+        try {
+            const res = await fetch("/api/admin/meals", { headers: {"Authorization": "Bearer "+TOKEN} });
+            if(!res.ok) throw new Error("Не удалось загрузить меню");
+            const meals = await res.json();
+            
+            const tbody = document.getElementById("meals-list-body");
+            tbody.innerHTML = meals.map(meal => `
+                <tr>
+                    <td><strong>${meal.name}</strong></td>
+                    <td>${meal.price} сум</td>
+                    <td><small>${meal.ingredients_text || 'Без ингредиентов'}</small></td>
+                    <td>
+                        <button class="btn" style="padding:4px 8px; font-size:12px;" onclick="editMealRow(${JSON.stringify(meal).replace(/"/g, '&quot;')})">✏️ Изменить</button>
+                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px;" onclick="deleteMeal('${meal.id}')">❌ Удалить</button>
+                    </td>
+                </tr>
+            `).join("");
+        } catch(e) { showError(e.message); }
+    }
+
+    async function loadStockKeysOnly() {
+        try {
+            const res = await fetch("/api/admin/stock", { headers: {"Authorization": "Bearer "+TOKEN} });
+            const stock = await res.json();
+            globalStockKeys = Object.keys(stock);
+            populatePurchaseDropdown(stock);
+        } catch(e) { showError(e.message); }
+    }
+
+    function addIngredientRow(keyword = '', quantity = '') {
+        const container = document.getElementById("recipe-ingredients-container");
+        const div = document.createElement("div");
+        div.className = "recipe-row";
+        
+        // Создаем инпут с дата-листом, чтобы админ мог выбрать существующий или ввести новое сырье
+        div.innerHTML = `
+            <input type="text" placeholder="ключевое слово (например: meat)" class="recipe-keyword" required value="${keyword}" list="existing-ingredients-list" style="flex:2;">
+            <input type="number" placeholder="грамм / шт" class="recipe-qty" required value="${quantity}" style="flex:1;" min="1">
+            <button type="button" class="btn btn-danger" style="padding:10px;" onclick="this.parentElement.remove()">🗑️</button>
+        `;
+        container.appendChild(div);
+        
+        // Создаем/обновляем datalist в DOM, если его нет
+        if(!document.getElementById("existing-ingredients-list")) {
+            const dl = document.createElement("datalist");
+            dl.id = "existing-ingredients-list";
+            document.body.appendChild(dl);
+        }
+        document.getElementById("existing-ingredients-list").innerHTML = globalStockKeys.map(k => `<option value="${k}"></option>`).join("");
+    }
+
+    async function saveMeal(e) {
+        e.preventDefault();
+        const id = document.getElementById("meal-id").value;
+        const name = document.getElementById("meal-name").value;
+        const price = parseInt(document.getElementById("meal-price").value);
+        
+        const rows = document.querySelectorAll(".recipe-row");
+        const recipe = {};
+        rows.forEach(row => {
+            const kw = row.querySelector(".recipe-keyword").value.trim();
+            const qty = parseInt(row.querySelector(".recipe-qty").value);
+            if(kw) recipe[kw] = qty;
+        });
+
+        const payload = { name, price, recipe };
+        const url = id ? `/api/admin/meals/${id}` : "/api/admin/meals";
+        const method = id ? "PUT" : "POST";
+
+        try {
+            const res = await fetch(url, {
+                method: method,
+                headers: { "Content-Type": "application/json", "Authorization": "Bearer "+TOKEN },
+                body: JSON.stringify(payload)
+            });
+            if(!res.ok) throw new Error("Бэкенд отклонил сохранение блюда");
+            resetMealForm();
+            loadMeals();
+        } catch(e) { alert(e.message); }
+    }
+
+    function editMealRow(meal) {
+        document.getElementById("form-meal-title").innerText = `✏️ Редактирование: ${meal.name}`;
+        document.getElementById("meal-id").value = meal.id;
+        document.getElementById("meal-name").value = meal.name;
+        document.getElementById("meal-price").value = meal.price;
+        
+        const container = document.getElementById("recipe-ingredients-container");
+        container.innerHTML = "";
+        if(meal.recipe) {
+            Object.keys(meal.recipe).forEach(kw => {
+                addIngredientRow(kw, meal.recipe[kw]);
+            });
+        }
+    }
+
+    async function deleteMeal(id) {
+        if(!confirm("Удалить это блюдо из меню ресторана?")) return;
+        try {
+            const res = await fetch(`/api/admin/meals/${id}`, {
+                method: "DELETE",
+                headers: {"Authorization": "Bearer "+TOKEN}
+            });
+            if(!res.ok) throw new Error("Ошибка удаления");
+            loadMeals();
+        } catch(e) { alert(e.message); }
+    }
+
+    function resetMealForm() {
+        document.getElementById("form-meal-title").innerText = "✨ Создать новое блюдо / напиток";
+        document.getElementById("meal-id").value = "";
+        document.getElementById("meal-form").reset();
+        document.getElementById("recipe-ingredients-container").innerHTML = "";
+    }
+
+    // ================= ЛОГИКА ВКЛАДКИ 3: СКЛАД И ЗАКУПКИ =================
+    async function loadStock() {
+        try {
+            const res = await fetch("/api/admin/stock", { headers: {"Authorization": "Bearer " + TOKEN} });
+            if (!res.ok) throw new Error("Ошибка чтения состояния склада");
+            const stock = await res.json();
+            clearError();
+            renderStockGrid(stock);
+            populatePurchaseDropdown(stock);
+        } catch (e) { showError(e.message); }
+    }
+
+    function renderStockGrid(stock) {
+        const container = document.getElementById("stock-container");
+        const minLimits = { meat: 500, rice: 1000, carrot: 1000, onion: 200, oil: 1000, coca_cola: 1, kompot: 1 };
+        
+        container.innerHTML = Object.keys(stock).map(key => {
+            const isLow = minLimits[key] !== undefined && stock[key] < minLimits[key];
+            return `
+                <div class="stock-item ${isLow ? 'low' : ''}">
+                    <div style="font-size: 12px; font-weight: 500; color:#475569;">${key}</div>
+                    <div class="stock-val">${stock[key]}</div>
+                    ${isLow ? '<span style="font-size:10px;color:#ef4444;font-weight:bold;display:block;margin-top:4px;">⚠️ ДЕФИЦИТ</span>' : ''}
+                </div>
+            `;
+        }).join("");
+    }
+
+    function populatePurchaseDropdown(stock) {
+        const select = document.getElementById("purchase-item");
+        select.innerHTML = Object.keys(stock).map(k => `<option value="${k}">${k}</option>`).join("");
+    }
+
+    async function executePurchase() {
+        const item = document.getElementById("purchase-item").value;
+        const qty = parseInt(document.getElementById("purchase-qty").value);
+        if(!qty || qty <= 0) return alert("Введите корректный объем закупки");
+
+        try {
+            const res = await fetch(`/api/admin/stock/buy?item=${item}&quantity=${qty}`, {
+                method: "POST",
+                headers: {"Authorization": "Bearer "+TOKEN}
+            });
+            if(!res.ok) throw new Error("Ошибка записи транзакции");
+            document.getElementById("purchase-qty").value = "";
+            loadStock();
+        } catch(e) { alert(e.message); }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+
+    // Первоначальный запуск
+    window.onload = function() {
+        loadTables();
+    };
+</script>
+</body>
+</html>

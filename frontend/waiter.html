@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Терминал официанта – Biteplate PRO</title>
+    <style>
+        :root {
+            --bg-main: #12141c;
+            --bg-card: #1e2230;
+            --bg-input: #262b3e;
+            --text-main: #ffffff;
+            --text-muted: #8a94a6;
+            
+            --status-free: #00b074;
+            --status-hold: #ffcc00;
+            --status-reserved: #2f80ed;
+            --status-occupied: #eb5757;
+            
+            --border-radius: 16px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 24px;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        header h1 {
+            font-size: 24px;
+            margin: 0;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        header .brand-tag {
+            background: linear-gradient(135deg, #2f80ed, #00b074);
+            -webkit-text-fill-color: transparent;
+            font-weight: bold;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 55fr 45fr;
+            gap: 24px;
+            height: calc(100vh - 100px);
+            min-height: 650px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+
+        .tables-container {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tables-container h2 {
+            font-size: 18px;
+            margin-top: 0;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .tables-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .table-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--border-radius);
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .table-item:hover {
+            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .table-item.active-selection {
+            box-shadow: 0 0 0 3px #ffffff;
+        }
+
+        .table-number {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .status-badge {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 4px 12px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+        }
+
+        .table-item.free .table-number { color: var(--status-free); }
+        .table-item.free .status-badge { background: rgba(0, 176, 116, 0.15); color: var(--status-free); }
+
+        .table-item.hold .table-number { color: var(--status-hold); }
+        .table-item.hold .status-badge { background: rgba(255, 204, 0, 0.15); color: var(--status-hold); }
+
+        .table-item.reserved .table-number { color: var(--status-reserved); }
+        .table-item.reserved .status-badge { background: rgba(47, 128, 237, 0.15); color: var(--status-reserved); }
+
+        .table-item.occupied .table-number { color: var(--status-occupied); }
+        .table-item.occupied .status-badge { background: rgba(235, 87, 87, 0.15); color: var(--status-occupied); }
+
+        .control-panel {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            padding: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .panel-placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .panel-block {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .panel-block h2 {
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .session-info-card {
+            background: var(--bg-input);
+            padding: 14px 18px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+            border-left: 4px solid var(--status-reserved);
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        select, input {
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 16px;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            width: 100%;
+            box-sizing: border-box;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        select:focus, input:focus {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            font-size: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-primary { background: #2f80ed; color: white; width: 100%; }
+        .btn-primary:hover { background: #1b6fd1; }
+        .btn-primary:disabled { background: #5a6b8c; cursor: not-allowed; }
+        .btn-success { background: var(--status-free); color: white; width: 100%; }
+        .btn-success:hover { background: #009662; }
+        .btn-danger { background: var(--status-occupied); color: white; width: 100%; }
+        .btn-danger:hover { background: #cc4646; }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: var(--text-main); }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); }
+
+        .btn-plus { width: 56px; height: 51px; background: rgba(255,255,255,0.08); font-size: 20px; }
+        .btn-plus:hover { background: rgba(255,255,255,0.15); }
+
+        .order-bucket {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px 0;
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .order-bucket li {
+            padding: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .order-bucket li:last-child { border-bottom: none; }
+
+        .btn-delete-item {
+            background: transparent;
+            color: var(--status-occupied);
+            padding: 4px 8px;
+            font-size: 14px;
+        }
+
+        #toast-box {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .kitchen-toast {
+            background: #ffffff;
+            color: #12141c;
+            padding: 18px 24px;
+            border-radius: 16px;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            min-width: 320px;
+            animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-left: 6px solid var(--status-hold);
+        }
+
+        .kitchen-toast .toast-h { font-weight: 700; font-size: 15px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; color: #cc7a00;}
+        .kitchen-toast .toast-b { font-size: 14px; color: #4a5568; line-height: 1.4; }
+
+        #payment-status {
+            background: rgba(0, 176, 116, 0.15);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 12px 0;
+            font-weight: 600;
+            color: var(--status-free);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Терминал официанта</h1>
+        <div class="brand-tag">Biteplate PRO System</div>
+    </header>
+
+    <div class="main-layout">
+        <div class="tables-container">
+            <h2>Интерактивная карта залов (10 Столов)</h2>
+            <div id="tables-grid" class="tables-grid"></div>
+        </div>
+
+        <div class="control-panel" id="main-panel">
+            <div id="panel-placeholder" class="panel-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin-bottom:12px; opacity:0.4;">
+                    <path d="M3 3h18v18H3V3z" stroke-dasharray="2 2"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Выберите нужный стол на карте для управления бронированием и счетом
+            </div>
+
+            <div id="order-form" class="panel-block" style="display:none">
+                <h2>Стол №<span id="order-table-id"></span></h2>
+                <div id="session-info" class="session-info-card">Синхронизация брони...</div>
+                
+                <label>Добавить блюдо в текущий чек:</label>
+                <div class="input-row">
+                    <select id="menu-select"></select>
+                    <input type="number" id="item-qty" value="1" min="1" style="width: 75px;">
+                    <button class="btn-plus" onclick="addItem()">+</button>
+                </div>
+
+                <label>Содержимое текущего заказа:</label>
+                <ul id="order-items-list" class="order-bucket"></ul>
+                
+                <button class="btn-success" onclick="submitOrder()">Отправить заказ в производство</button>
+            </div>
+
+            <div id="payment-form" class="panel-block" style="display:none">
+                <h2>Расчет и фиксация: Стол №<span id="payment-table-id"></span></h2>
+                <div class="session-info-card" style="border-left-color: var(--status-occupied)">
+                    <strong>ID Транзакции:</strong> <span id="pay-order-id">—</span><br>
+                    <strong>Итого к оплате:</strong> <span id="pay-total-amount" style="font-size:20px; font-weight:700; color:var(--status-occupied);">0</span> сум
+                </div>
+                <div id="payment-buttons" class="input-row">
+                    <button class="btn-primary" onclick="processPayment('cash')">Наличные (Cash)</button>
+                    <button class="btn-primary" onclick="processPayment('card')">Карта (UPSC/Uzcard)</button>
+                </div>
+                <div id="payment-status" style="display:none;"></div>
+                <button class="btn-danger" onclick="closeTableSession()" id="btn-close-table" style="margin-top: auto; display:none;">Закрыть сессию стола (FREE)</button>
+                <button class="btn-secondary" onclick="resetPanel()" style="margin-top: 8px;">Вернуться к меню стола</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-box"></div>
+
+    <script>
+        const TOKEN = "waiter_token";
+        
+        let currentTableId = null;
+        let currentBookingId = null;
+        let currentOrderId = null;
+        let orderItems = []; 
+
+        async function init() {
+            await loadTables();
+            await loadMenu();
+            connectKitchenWebSocket();
+        }
+
+        async function loadTables() {
+            try {
+                const res = await fetch("/api/waiter/tables", { headers: { "Authorization": "Bearer " + TOKEN } });
+                const backendTables = await res.json();
+                const tablesMap = new Map(backendTables.map(t => [String(t.id), t.state]));
+                
+                let htmlBuffer = "";
+                for (let i = 1; i <= 10; i++) {
+                    const tableId = `T${i}`;
+                    const state = tablesMap.get(tableId) || "FREE";
+                    const stateClass = state.toLowerCase();
+                    const activeSelectionClass = currentTableId === tableId ? 'active-selection' : '';
+
+                    htmlBuffer += `
+                        <div class="table-item ${stateClass} ${activeSelectionClass}" id="card-${tableId}" onclick="selectTable('${tableId}')">
+                            <div class="table-number">${tableId}</div>
+                            <span class="status-badge">${state}</span>
+                        </div>
+                    `;
+                }
+                document.getElementById("tables-grid").innerHTML = htmlBuffer;
+            } catch (err) {
+                console.error("Ошибка загрузки столов:", err);
+            }
+        }
+
+        async function loadMenu() {
+            try {
+                const res = await fetch("/api/waiter/menu", { headers: { "Authorization": "Bearer " + TOKEN } });
+                if (!res.ok) throw new Error("Ошибка API меню");
+                const meals = await res.json();
+                populateMenuDropdown(meals);
+            } catch (err) {
+                console.warn("Меню не загружено с сервера. Функционал заказа блюд недоступен.");
+                document.getElementById("menu-select").innerHTML = '<option>Меню временно недоступно</option>';
+            }
+        }
+
+        function populateMenuDropdown(items) {
+            document.getElementById("menu-select").innerHTML = items.map(m => 
+                `<option value="${m.id}" data-price="${m.price}" data-name="${m.name}">${m.name} (${parseInt(m.price).toLocaleString()} сум)</option>`
+            ).join("");
+        }
+
+        async function selectTable(tableId) {
+            currentTableId = tableId;
+            currentBookingId = null;
+            currentOrderId = null;
+            orderItems = [];
+            
+            document.querySelectorAll('.table-item').forEach(el => el.classList.remove('active-selection'));
+            document.getElementById(`card-${tableId}`).classList.add('active-selection');
+
+            document.getElementById("panel-placeholder").style.display = "none";
+            document.getElementById("payment-form").style.display = "none";
+            document.getElementById("order-items-list").innerHTML = "";
+            document.getElementById("item-qty").value = 1;
+            
+            document.getElementById("order-table-id").innerText = tableId;
+            const sessionInfo = document.getElementById("session-info");
+            sessionInfo.innerHTML = "Поиск активных бронирований...";
+            document.getElementById("order-form").style.display = "block";
+
+            try {
+                const res = await fetch(`/api/waiter/tables/${tableId}/active-session`, {
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+                
+                if (res.ok) {
+                    const sessionData = await res.json();
+                    currentBookingId = sessionData.booking_id;
+                    sessionInfo.innerHTML = `<strong>Гость:</strong> ${sessionData.customer_name || "Клиент Biteplate"}<br><strong>Слот времени:</strong> ${sessionData.time_slot}`;
+                } else {
+                    sessionInfo.innerHTML = "ℹ️ Прямая посадка. Автоматический линк на сквозную системную сессию.";
+                }
+            } catch (err) {
+                sessionInfo.innerHTML = "Работа в локальном офлайн-буфере.";
+            }
+        }
+
+        function addItem() {
+            const select = document.getElementById("menu-select");
+            const selectedOption = select.options[select.selectedIndex];
+            
+            const menuId = select.value;
+            const name = selectedOption.getAttribute("data-name");
+            const price = parseFloat(selectedOption.getAttribute("data-price"));
+            const qty = parseInt(document.getElementById("item-qty").value) || 1;
+
+            if (!menuId || !name || isNaN(price)) {
+                alert("Выберите корректное блюдо из меню");
+                return;
+            }
+
+            const duplicate = orderItems.find(item => item.menu_id === menuId);
+            if (duplicate) {
+                duplicate.qty += qty;
+            } else {
+                orderItems.push({ menu_id: menuId, name: name, price: price, qty: qty });
+            }
+
+            renderOrderList();
+            document.getElementById("item-qty").value = 1;
+        }
+
+        function renderOrderList() {
+            const container = document.getElementById("order-items-list");
+            container.innerHTML = orderItems.map((item, idx) => `
+                <li>
+                    <div><strong>${item.qty}x</strong> ${item.name}</div>
+                    <div style="font-weight:600; font-size:14px;">
+                        ${(item.price * item.qty).toLocaleString()} сум
+                        <button onclick="removeItem(${idx})" class="btn-delete-item">✕</button>
+                    </div>
+                </li>
+            `).join("");
+        }
+
+        function removeItem(idx) {
+            orderItems.splice(idx, 1);
+            renderOrderList();
+        }
+
+        async function submitOrder() {
+            if (orderItems.length === 0) {
+                alert("Добавьте блюда из меню перед отправкой!");
+                return;
+            }
+
+            try {
+                const res = await fetch("/api/waiter/orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + TOKEN },
+                    body: JSON.stringify({
+                        table_id: currentTableId,
+                        booking_id: currentBookingId,
+                        items: orderItems
+                    })
+                });
+
+                if (res.ok) {
+                    const savedOrder = await res.json();
+                    currentOrderId = savedOrder.id;
+
+                    document.getElementById("order-form").style.display = "none";
+                    document.getElementById("payment-table-id").innerText = currentTableId;
+                    document.getElementById("pay-order-id").innerText = currentOrderId;
+                    document.getElementById("pay-total-amount").innerText = parseInt(savedOrder.total_cost).toLocaleString();
+                    
+                    document.getElementById("btn-close-table").style.display = "none";
+                    document.getElementById("payment-buttons").style.display = "flex"; // показываем кнопки оплаты
+                    document.getElementById("payment-status").style.display = "none";
+                    document.getElementById("payment-form").style.display = "block";
+                } else {
+                    alert("Ошибка валидации позиций заказа сервером.");
+                }
+            } catch (err) {
+                alert("Ошибка связи с сервером при отправке чека.");
+            }
+        }
+
+        async function processPayment(method) {
+            const endpoint = method === 'cash' ? 'pay_cash' : 'pay_card';
+            // Блокируем кнопки оплаты сразу, чтобы предотвратить двойные нажатия
+            const paymentButtons = document.getElementById("payment-buttons");
+            paymentButtons.style.display = "none";
+            const statusDiv = document.getElementById("payment-status");
+            statusDiv.style.display = "block";
+            statusDiv.innerText = "Обработка платежа...";
+
+            try {
+                const res = await fetch(`/api/waiter/orders/${currentOrderId}/${endpoint}`, {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+
+                if (res.ok) {
+                    statusDiv.innerText = `✅ Оплата ${method === 'cash' ? 'наличными' : 'картой'} прошла успешно.`;
+                    document.getElementById("btn-close-table").style.display = "block";
+                } else {
+                    statusDiv.innerText = "❌ Ошибка платежа. Попробуйте снова.";
+                    // Возвращаем кнопки, чтобы можно было выбрать другой способ
+                    paymentButtons.style.display = "flex";
+                }
+            } catch (err) {
+                console.error(err);
+                statusDiv.innerText = "❌ Сетевая ошибка. Попробуйте снова.";
+                paymentButtons.style.display = "flex";
+            }
+        }
+
+        async function closeTableSession() {
+            try {
+                await fetch(`/api/waiter/orders/${currentOrderId}/close_table`, {
+                    method: "POST",
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+                
+                resetPanel();
+                await loadTables();
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function resetPanel() {
+            document.getElementById("order-form").style.display = "none";
+            document.getElementById("payment-form").style.display = "none";
+            document.getElementById("panel-placeholder").style.display = "flex";
+            document.getElementById("payment-buttons").style.display = "flex";
+            document.getElementById("payment-status").style.display = "none";
+            document.querySelectorAll('.table-item').forEach(el => el.classList.remove('active-selection'));
+            currentTableId = null;
+            currentBookingId = null;
+            currentOrderId = null;
+            orderItems = [];
+        }
+
+        function connectKitchenWebSocket() {
+            const ws = new WebSocket(`ws://${window.location.host}/api/waiter/ws?token=${TOKEN}`);
+
+            ws.onmessage = function(event) {
+                try {
+                    const msg = JSON.parse(event.data);
+                    if (msg.event === "order_ready") {
+                        triggerKitchenToast(msg.table_id, msg.items);
+                        fireHardwareBeep();
+                        loadTables();
+                    }
+                } catch (e) {
+                    console.error("Ошибка парсинга WS-пакета:", e);
+                }
+            };
+
+            ws.onclose = function() {
+                setTimeout(connectKitchenWebSocket, 5000);
+            };
+        }
+
+        function triggerKitchenToast(tableId, items) {
+            const box = document.getElementById("toast-box");
+            const element = document.createElement("div");
+            element.className = "kitchen-toast";
+            
+            const list = items.map(i => `• ${i}`).join("<br>");
+            element.innerHTML = `
+                <div class="toast-h">🔔 ГОТОВО К ВЫДАЧЕ: СТОЛ ${tableId}</div>
+                <div class="toast-b">Заберите блюда с раздачи кухни:<br>${list}</div>
+            `;
+            
+            box.appendChild(element);
+            setTimeout(() => {
+                element.style.animation = "slideUp 0.2s ease reverse";
+                setTimeout(() => element.remove(), 200);
+            }, 6000);
+        }
+
+        function fireHardwareBeep() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                [0, 180].forEach(delay => {
+                    setTimeout(() => {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(950, ctx.currentTime); 
+                        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.12);
+                    }, delay);
+                });
+            } catch (e) {
+                console.log("Воспроизведение звука ожидает активности на странице.");
+            }
+        }
+
+        init();
+    </script>
+</body>
+</html>

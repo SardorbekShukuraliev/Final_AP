@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Портал Клиента – Онлайн Бронирование BitePlate</title>
+    <style>
+        /* весь ваш CSS без изменений */
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            padding: 40px;
+            margin: 20px 0;
+        }
+        h1 {
+            color: #1e3a8a;
+            font-size: 28px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 20px;
+            text-align: center;
+            border-bottom: 2px solid #f1f5f9;
+            padding-bottom: 15px;
+        }
+        h2, h3 {
+            color: #1e293b;
+            margin-top: 0;
+        }
+        h3 {
+            font-size: 18px;
+            border-left: 4px solid #2563eb;
+            padding-left: 10px;
+            margin-bottom: 20px;
+        }
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+        .tab-btn {
+            background: #e2e8f0;
+            border: none;
+            padding: 10px 20px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: #2563eb;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .setup-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background: #f1f5f9;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+        .full-width {
+            grid-column: span 2;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+        }
+        input, select {
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            background-color: white;
+            color: #0f172a;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 215, 0.15);
+        }
+        .time-range-box {
+            grid-column: span 2;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        .grid-tables {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .table {
+            background: #ffffff;
+            border: 2px solid #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+        .table:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
+        }
+        .table.free {
+            border-color: #10b981;
+            color: #065f46;
+            background: #f0fdf4;
+        }
+        .table.free:hover {
+            background: #d1fae5;
+        }
+        .summary-box {
+            background: #fafafa;
+            border: 1px dashed #cbd5e1;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        #timer {
+            font-weight: 700;
+            color: #ef4444;
+            background: #fee2e2;
+            padding: 2px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .menu-category {
+            margin-bottom: 25px;
+        }
+        .menu-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f8fafc;
+            padding: 14px 20px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .item-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .btn-qty {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-form {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 12px;
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 25px;
+        }
+        .btn-main {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 15px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(37, 99, 215, 0.2);
+            margin-bottom: 10px;
+        }
+        .btn-cancel {
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .reservation-card {
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: #f8fafc;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>BitePlate Smart Restaurant Reservation</h1>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('booking-tab')">🆕 Новое бронирование</button>
+        <button class="tab-btn" onclick="switchTab('reservations-tab')">📋 Мои бронирования</button>
+    </div>
+
+    <div id="booking-tab" class="tab-content active">
+        <div id="booking-setup">
+            <div class="setup-section">
+                <div class="form-group">
+                    <label for="book-date">Дата визита:</label>
+                    <input type="date" id="book-date" onchange="handleDateChange()">
+                </div>
+                <div class="form-group">
+                    <label for="start-time">Время начала:</label>
+                    <select id="start-time" onchange="updateTimeRange()"></select>
+                </div>
+                <div class="form-group full-width">
+                    <label for="duration">Продолжительность сессии:</label>
+                    <select id="duration" onchange="updateTimeRange()"></select>
+                </div>
+                <div class="time-range-box">
+                    Выбранный интервал пребывания: <span id="time-range-display">--:-- - --:--</span>
+                </div>
+            </div>
+            <h3>2. Доступные столики на этот интервал</h3>
+            <div id="tables" class="grid-tables"></div>
+        </div>
+
+        <div id="reservation-flow" style="display:none">
+            <h2>Оформление бронирования стола <span id="table-id-display"></span></h2>
+            <div class="summary-box">
+                ⏱ Время на завершение транзакции и верификацию оплаты: <span id="timer">15:00</span>
+            </div>
+            <div class="menu-section">
+                <h3>🛒 Предзаказ блюд и напитков к вашему приходу</h3>
+                <div id="menu-container"></div>
+            </div>
+            <div class="payment-section" style="margin-top: 25px;">
+                <h3>💳 Защищенный шлюз онлайн-оплаты</h3>
+                <div class="card-form">
+                    <input type="text" id="card-num" class="full-width" placeholder="Номер карты (16 цифр)" maxlength="16">
+                    <input type="text" id="card-date" placeholder="ММ/ГГ" maxlength="5">
+                    <input type="password" id="card-cvv" placeholder="CVV/CVC" maxlength="3">
+                </div>
+            </div>
+            <div class="summary-box" style="margin-bottom: 20px; background: #f8fafc;">
+                🔹 Стоимость аренды стола: <span id="price-table">0</span> сум<br>
+                🔹 Стоимость предзаказа еды: <span id="price-food">0</span> сум<br>
+                <hr>
+                <strong>Итоговая цена к списанию: <span id="price-total">0</span> сум</strong>
+            </div>
+            <button class="btn-main" onclick="confirmBooking()">Оплатить и подтвердить</button>
+            <button class="btn-cancel" onclick="cancelBooking()">Отменить удержание</button>
+        </div>
+    </div>
+
+    <div id="reservations-tab" class="tab-content">
+        <h2>Мои активные бронирования</h2>
+        <div id="my-reservations-list"></div>
+    </div>
+</div>
+
+<script>
+    const TOKEN = localStorage.getItem('token');
+    const ROLE = localStorage.getItem('role');
+    if (!TOKEN || ROLE !== 'client') {
+        window.location.href = '/login.html';
+    }
+
+    let countdown, heldTable;
+    const baseTablePricePerHour = 20000;
+    let menuItems = [], cart = {};
+
+    // ========== Инициализация ==========
+    function initTimeSelectors() {
+        const durSel = document.getElementById("duration");
+        durSel.innerHTML = '';
+        for (let h = 1; h <= 15; h++) {
+            let opt = document.createElement("option");
+            opt.value = h;
+            opt.innerText = h + " час(ов)";
+            if (h === 1) opt.selected = true;
+            durSel.appendChild(opt);
+        }
+
+        const dateInput = document.getElementById("book-date");
+        const now = new Date();
+        let todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+        dateInput.min = todayStr;
+        if (now.getHours() >= 23) {
+            let tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate()+1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
+        } else {
+            dateInput.value = todayStr;
+        }
+        rebuildTimeOptions();
+        loadMenu();
+    }
+
+    function rebuildTimeOptions() {
+        const startSelect = document.getElementById("start-time");
+        const dateInput = document.getElementById("book-date");
+        const now = new Date();
+        let todayStr = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0');
+        const isToday = (dateInput.value === todayStr);
+        const currentHour = now.getHours();
+        let prev = startSelect.value;
+        startSelect.innerHTML = '';
+        let firstAvail = null;
+        for (let h = 9; h <= 23; h++) {
+            if (isToday && h <= currentHour) continue;
+            let str = h.toString().padStart(2,'0') + ":00";
+            let opt = document.createElement("option");
+            opt.value = str;
+            opt.innerText = str;
+            if (!firstAvail) firstAvail = str;
+            startSelect.appendChild(opt);
+        }
+        if (startSelect.children.length === 0 && isToday) {
+            let tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate()+1);
+            dateInput.value = tomorrow.toISOString().split('T')[0];
+            rebuildTimeOptions();
+            return;
+        }
+        if (prev && [...startSelect.options].some(o => o.value === prev)) startSelect.value = prev;
+        else if (firstAvail) startSelect.value = firstAvail;
+        updateTimeRange();
+    }
+
+    function handleDateChange() { rebuildTimeOptions(); }
+
+    function isTimeSlotValid(date, startTime) {
+        return new Date(date + 'T' + startTime) > new Date();
+    }
+
+    function updateTimeRange() {
+        const dateInput = document.getElementById("book-date").value;
+        const startStr = document.getElementById("start-time").value;
+        const duration = parseInt(document.getElementById("duration").value);
+        if (!startStr || isNaN(duration)) return;
+
+        let startH = parseInt(startStr.split(":")[0]);
+        let endH = startH + duration;
+        if (endH > 24) {
+            alert("Ресторан закрывается в 00:00! Длительность автоматически сокращена.");
+            document.getElementById("duration").value = (24 - startH).toString();
+            endH = 24;
+        }
+        let endStr = endH === 24 ? "00:00" : endH.toString().padStart(2,'0') + ":00";
+        document.getElementById("time-range-display").innerText = `${startStr} - ${endStr}`;
+        if (!isTimeSlotValid(dateInput, startStr)) {
+            alert("Выбранное время уже прошло.");
+            rebuildTimeOptions();
+            return;
+        }
+        if (!heldTable) loadTables();
+    }
+
+    // ========== Меню ==========
+    async function loadMenu() {
+        try {
+            const res = await fetch("/api/client/menu", { headers: {"Authorization": "Bearer " + TOKEN} });
+            if (!res.ok) throw new Error("Ошибка загрузки меню");
+            menuItems = await res.json();
+            renderMenu(menuItems);
+        } catch(e) {
+            console.error(e);
+            document.getElementById("menu-container").innerHTML = '<p style="color:#64748b;">Меню недоступно.</p>';
+        }
+    }
+
+    function renderMenu(items) {
+        const container = document.getElementById("menu-container");
+        if (!items.length) {
+            container.innerHTML = '<p style="color:#ef4444;">Нет доступных блюд (дефицит ингредиентов).</p>';
+            return;
+        }
+        const mains = items.filter(i => i.name.includes('Плов') || i.name.includes('Шашлык') || i.name.includes('Стейк'));
+        const drinks = items.filter(i => i.name.includes('Cola') || i.name.includes('Компот') || i.name.includes('Напиток'));
+        const others = items.filter(i => !mains.includes(i) && !drinks.includes(i));
+        let html = '';
+        if (mains.length) html += buildCategoryHtml('🍲 Основные Блюда', mains);
+        if (drinks.length) html += buildCategoryHtml('🥤 Напитки', drinks);
+        if (others.length) html += buildCategoryHtml('📌 Другое', others);
+        container.innerHTML = html;
+        cart = {};
+        items.forEach(i => cart[i.id] = { name: i.name, price: i.price, qty: 0 });
+    }
+
+    function buildCategoryHtml(title, items) {
+        return `<div class="menu-category"><h4>${title}</h4>` +
+            items.map(item => `
+                <div class="menu-item" data-id="${item.id}">
+                    <span>${item.name} <span style="color:#2563eb;font-weight:600;margin-left:5px;">(${item.price} сум)</span></span>
+                    <div class="item-controls">
+                        <button class="btn-qty" onclick="changeQty(${item.id}, -1)">-</button>
+                        <span id="qty-${item.id}">0</span>
+                        <button class="btn-qty" onclick="changeQty(${item.id}, 1)">+</button>
+                    </div>
+                </div>
+            `).join('') + '</div>';
+    }
+
+    // ========== Столы ==========
+    async function loadTables() {
+        const date = document.getElementById("book-date").value;
+        const range = document.getElementById("time-range-display").innerText;
+        const [start, end] = range.split(" - ");
+        if (!start || !isTimeSlotValid(date, start)) return;
+        try {
+            const res = await fetch(`/api/client/tables?date=${date}&start_time=${start}&end_time=${end}`, {
+                headers: { "Authorization": "Bearer " + TOKEN }
+            });
+            if (!res.ok) throw new Error("Ошибка загрузки столов");
+            const tables = await res.json();
+            const container = document.getElementById("tables");
+            if (!tables.length) {
+                container.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#64748b;">Все столики заняты.</p>';
+                return;
+            }
+            container.innerHTML = tables.map(t =>
+                `<div class="table free" onclick="holdTable('${t.id}')">Стол №${t.id}<br><span style="font-size:12px;font-weight:normal;color:#475569;">(${t.capacity} мест)</span></div>`
+            ).join("");
+        } catch(e) {
+            document.getElementById("tables").innerHTML = '<p style="color:#ef4444;">Ошибка загрузки.</p>';
+        }
+    }
+
+    async function holdTable(id) {
+        const date = document.getElementById("book-date").value;
+        const range = document.getElementById("time-range-display").innerText;
+        const [start, end] = range.split(" - ");
+        const res = await fetch(`/api/client/tables/${id}/hold`, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + TOKEN, "Content-Type": "application/json" },
+            body: JSON.stringify({ date, start_time: start, end_time: end })
+        });
+        if (res.status === 409 || res.status === 423) {
+            alert("Стол уже занят! Выберите другой.");
+            loadTables();
+            return;
+        }
+        if (!res.ok) {
+            alert("Ошибка удержания стола");
+            return;
+        }
+        heldTable = { id, duration: parseInt(document.getElementById("duration").value) };
+        document.getElementById("booking-setup").style.display = "none";
+        document.getElementById("reservation-flow").style.display = "block";
+        document.getElementById("table-id-display").innerText = "№" + id;
+        calculateTotals();
+        startTimer(15 * 60);
+    }
+
+    function changeQty(id, delta) {
+        if (cart[id]) {
+            cart[id].qty = Math.max(0, cart[id].qty + delta);
+            document.getElementById(`qty-${id}`).innerText = cart[id].qty;
+            calculateTotals();
+        }
+    }
+
+    function calculateTotals() {
+        if (!heldTable) return;
+        let tableCost = baseTablePricePerHour * heldTable.duration;
+        let foodCost = 0;
+        for (let id in cart) foodCost += cart[id].price * cart[id].qty;
+        document.getElementById("price-table").innerText = tableCost;
+        document.getElementById("price-food").innerText = foodCost;
+        document.getElementById("price-total").innerText = tableCost + foodCost;
+    }
+
+    function startTimer(seconds) {
+        let remaining = seconds;
+        function tick() {
+            const m = Math.floor(remaining / 60), s = remaining % 60;
+            document.getElementById("timer").innerText = `${m}:${s.toString().padStart(2, '0')}`;
+            if (remaining <= 0) {
+                clearInterval(countdown);
+                alert("15 минут истекли! Бронь аннулирована.");
+                resetToDefault();
+            }
+            remaining--;
+        }
+        clearInterval(countdown);
+        countdown = setInterval(tick, 1000);
+    }
+
+    async function confirmBooking() {
+        const cardNum = document.getElementById("card-num").value.trim();
+        const cardDate = document.getElementById("card-date").value.trim();
+        const cardCvv = document.getElementById("card-cvv").value.trim();
+        if (cardNum.length !== 16 || isNaN(cardNum) || cardDate === "" || cardCvv.length !== 3 || isNaN(cardCvv)) {
+            alert("Неверные данные карты!");
+            return;
+        }
+        let preOrder = [];
+        for (let id in cart) {
+            if (cart[id].qty > 0) preOrder.push({ menu_id: parseInt(id), qty: cart[id].qty });
+        }
+        const res = await fetch(`/api/client/tables/${heldTable.id}/confirm`, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + TOKEN, "Content-Type": "application/json" },
+            body: JSON.stringify({
+                payment_success: true,
+                card_number: cardNum,
+                total_paid: parseInt(document.getElementById("price-total").innerText),
+                food_items: preOrder
+            })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            alert("Ошибка: " + (err.detail || 'Не удалось завершить списание.'));
+            return;
+        }
+        clearInterval(countdown);
+        alert("Бронирование подтверждено!");
+        resetToDefault();
+        switchTab('reservations-tab');
+        loadMyReservations();
+    }
+
+    async function cancelBooking() {
+        if (heldTable) {
+            // Используем обычный fetch, а не sendBeacon, чтобы передать токен
+            await fetch(`/api/client/tables/${heldTable.id}/release`, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + TOKEN }
+            });
+        }
+        clearInterval(countdown);
+        resetToDefault();
+    }
+
+    function resetToDefault() {
+        heldTable = null;
+        for (let id in cart) {
+            cart[id].qty = 0;
+            const el = document.getElementById(`qty-${id}`);
+            if (el) el.innerText = "0";
+        }
+        document.getElementById("card-num").value = "";
+        document.getElementById("card-date").value = "";
+        document.getElementById("card-cvv").value = "";
+        document.getElementById("reservation-flow").style.display = "none";
+        document.getElementById("booking-setup").style.display = "block";
+        rebuildTimeOptions();
+    }
+
+    // ========== Мои бронирования ==========
+    async function loadMyReservations() {
+        const container = document.getElementById("my-reservations-list");
+        try {
+            const res = await fetch("/api/client/reservations", {
+                headers: { "Authorization": "Bearer " + TOKEN }
+            });
+            if (!res.ok) throw new Error("Ошибка загрузки");
+            const bookings = await res.json();
+            if (!bookings.length) {
+                container.innerHTML = '<p style="color:#64748b;">У вас пока нет активных бронирований.</p>';
+                return;
+            }
+            container.innerHTML = bookings.map(b => `
+                <div class="reservation-card">
+                    <strong>Стол №${b.table_id}</strong> – ${b.date} (${b.time_slot})<br>
+                    Статус: ${b.status} | Сумма: ${b.total_cost} сум<br>
+                    Заказ: ${b.items || '—'}
+                    <br><button class="btn-cancel" style="width:auto;margin-top:8px;" onclick="cancelMyBooking(${b.booking_id})">Отменить</button>
+                </div>
+            `).join("");
+        } catch(e) {
+            container.innerHTML = '<p style="color:#ef4444;">Ошибка загрузки бронирований.</p>';
+        }
+    }
+
+    async function cancelMyBooking(bookingId) {
+        if (!confirm("Отменить это бронирование?")) return;
+        const res = await fetch(`/api/client/bookings/${bookingId}/cancel`, {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + TOKEN }
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            alert("Ошибка отмены: " + (err.detail || ''));
+            return;
+        }
+        loadMyReservations();
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        if (tabId === 'booking-tab') {
+            document.querySelector('.tab-btn:first-child').classList.add('active');
+            document.getElementById('booking-tab').classList.add('active');
+            rebuildTimeOptions();
+        } else {
+            document.querySelector('.tab-btn:last-child').classList.add('active');
+            document.getElementById('reservations-tab').classList.add('active');
+            loadMyReservations();
+        }
+    }
+
+    // Функция выхода с освобождением стола
+    function logout() {
+        if (heldTable) {
+            // Используем fetch с keepalive, чтобы запрос успел уйти при редиректе
+            fetch(`/api/client/tables/${heldTable.id}/release`, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + TOKEN },
+                keepalive: true
+            });
+        }
+        localStorage.clear();
+        window.location.href = '/login.html';
+    }
+
+    // Освобождение при закрытии вкладки
+    window.addEventListener('beforeunload', function (e) {
+        if (heldTable) {
+            // fetch с keepalive надёжнее sendBeacon для кастомных заголовков
+            fetch(`/api/client/tables/${heldTable.id}/release`, {
+                method: "POST",
+                headers: { "Authorization": "Bearer " + TOKEN },
+                keepalive: true
+            });
+        }
+    });
+
+    window.onload = function () {
+        if (!document.getElementById('logout-btn')) {
+            const header = document.querySelector('h1');
+            const btn = document.createElement('button');
+            btn.id = 'logout-btn';
+            btn.innerText = 'Выйти';
+            btn.style.cssText = 'float:right; background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-weight:600; margin-top:-5px;';
+            btn.onclick = logout;
+            header.appendChild(btn);
+        }
+        initTimeSelectors();
+    };
+</script>
+</body>
+</html>

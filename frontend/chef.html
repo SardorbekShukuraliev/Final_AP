@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Кухонный терминал КДС – Biteplate Kitchen</title>
+    <style>
+        :root {
+            --bg-main: #0c0e14;
+            --bg-card: #161924;
+            --bg-ticket: #202438;
+            --text-main: #ffffff;
+            --text-muted: #7e8b9b;
+            
+            /* Статусы */
+            --status-pending: #ff9f43;    /* Ожидает */
+            --status-preparing: #2f80ed;  /* Готовится */
+            --status-ready: #00b074;      /* Готово */
+            
+            --border-radius: 16px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Навигационная панель KDS */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-card);
+            padding: 16px 24px;
+            border-radius: var(--border-radius);
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        header h1 {
+            font-size: 22px;
+            margin: 0;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header h1 span {
+            color: var(--status-pending);
+            font-size: 14px;
+            background: rgba(255, 159, 67, 0.15);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+
+        .history-controls {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Управленческие кнопки крупных размеров */
+        button {
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px 24px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        button:active { transform: scale(0.97); }
+
+        .btn-history {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .btn-history:hover { background: rgba(255, 255, 255, 0.12); }
+
+        /* Сетка кухонных тикетов (Заказов) */
+        .tickets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Стилизация тикета (карточки заказа) */
+        .ticket-card {
+            background: var(--bg-card);
+            border-radius: var(--border-radius);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: var(--transition);
+        }
+
+        /* Индикация важности по статусу */
+        .ticket-card.pending { border-color: var(--status-pending); }
+        .ticket-card.preparing { border-color: var(--status-preparing); }
+
+        .ticket-header {
+            background: var(--bg-ticket);
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .ticket-table {
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .ticket-meta {
+            text-align: right;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .status-tag {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 6px;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+        .pending .status-tag { background: rgba(255, 159, 67, 0.15); color: var(--status-pending); }
+        .preparing .status-tag { background: rgba(47, 128, 237, 0.15); color: var(--status-preparing); }
+
+        /* Список блюд внутри тикета */
+        .ticket-body {
+            padding: 18px;
+            flex-grow: 1;
+        }
+
+        .meals-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .meals-list li {
+            font-size: 18px; /* Крупный текст для поваров */
+            font-weight: 500;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            line-height: 1.3;
+        }
+
+        .meals-list li:last-child { margin-bottom: 0; }
+
+        .meal-qty {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            color: #fff;
+            margin-right: 10px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        /* Кнопки действий на весь экран тикета */
+        .ticket-action-btn {
+            width: 100%;
+            border-radius: 0;
+            padding: 18px;
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #fff;
+        }
+
+        .btn-accept { background: var(--status-pending); }
+        .btn-accept:hover { background: #e0852b; }
+        
+        .btn-ready { background: var(--status-preparing); }
+        .btn-ready:hover { background: #1b6fd1; }
+
+        /* Пустое состояние раздачи */
+        .kitchen-empty {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-muted);
+            font-size: 18px;
+            font-style: italic;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Анимация исчезновения готового блюда */
+        .fade-out {
+            opacity: 0;
+            transform: scale(0.9);
+            margin-right: -320px;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Монитор Горячего Цеха <span id="active-count">Активно: 0</span></h1>
+        <div class="history-controls">
+            <button class="btn-history" onclick="executeHistoryAction('undo')" title="Отменить последнее действие">
+                ↩️ Undo (Шаг назад)
+            </button>
+            <button class="btn-history" onclick="executeHistoryAction('redo')" title="Вернуть отмененное действие">
+                ↪️ Redo (Шаг вперед)
+            </button>
+        </div>
+    </header>
+
+    <div id="kitchen-grid" class="tickets-grid">
+        <div class="kitchen-empty">Загрузка очереди заказов...</div>
+    </div>
+
+    <script>
+        const TOKEN = "chef_token";
+        let localOrdersCache = [];
+
+        // Инициализация системы цеха
+        function initKitchen() {
+            loadKitchenOrders();
+            connectKitchenWS();
+            
+            // Запасной фолбэк-интервал (если оборвется WS)
+            setInterval(loadKitchenOrders, 5000);
+        }
+
+        // Загрузка активной очереди с сервера
+        async function loadKitchenOrders() {
+            try {
+                const res = await fetch("/api/chef/orders", { headers: { "Authorization": "Bearer " + TOKEN } });
+                const orders = await res.json();
+                
+                // Фильтруем на фронтенде: Шеф видит только то, что нужно ГОТОВИТЬ (PENDING и PREPARING)
+                // Как только статус становится READY, блюдо исчезает из его UI
+                localOrdersCache = orders.filter(o => o.status === "PENDING" || o.status === "PREPARING");
+                
+                renderTickets();
+            } catch (err) {
+                console.error("Ошибка обновления KDS ленты:", err);
+            }
+        }
+
+        // Рендеринг тикетов в реальном времени
+        function renderTickets() {
+            const grid = document.getElementById("kitchen-grid");
+            document.getElementById("active-count").innerText = `Активно: ${localOrdersCache.length}`;
+
+            if (localOrdersCache.length === 0) {
+                grid.innerHTML = `<div class="kitchen-empty">🎉 Все заказы отданы! На кухне чисто.</div>`;
+                return;
+            }
+
+            grid.innerHTML = localOrdersCache.map(o => {
+                const shortId = o.id.substring(0, 4).toUpperCase();
+                const statusClass = o.status.toLowerCase();
+                const isPending = o.status === "PENDING";
+                
+                // Рендеринг позиций блюд (Проверяем наличие вложенного массива items)
+                const mealsHtml = (o.items || []).map(item => `
+                    <li>
+                        <span><span class="meal-qty">${item.qty || 1}x</span>${item.name}</span>
+                    </li>
+                `).join("");
+
+                return `
+                    <div class="ticket-card ${statusClass}" id="ticket-${o.id}">
+                        <div class="ticket-header">
+                            <div class="ticket-table">Стол №${o.table_id || "—"}</div>
+                            <div class="ticket-meta">
+                                <span class="status-badge status-tag">${isPending ? 'Новый' : 'Готовится'}</span>
+                                <div>Чек #${shortId}</div>
+                            </div>
+                        </div>
+                        <div class="ticket-body">
+                            <ul class="meals-list">
+                                ${mealsHtml || '<li><span style="color:var(--text-muted)">Содержимое уточняется...</span></li>'}
+                            </ul>
+                        </div>
+                        ${isPending ? 
+                            `<button class="ticket-action-btn btn-accept" onclick="acceptOrder('${o.id}')">👨‍🍳 Принять в работу</button>` : 
+                            `<button class="ticket-action-btn btn-ready" onclick="completeOrder('${o.id}')">✅ Готово / Отдать</button>`
+                        }
+                    </div>
+                `;
+            }).join("");
+        }
+
+        // 1. Принять заказ в производство (Статус -> PREPARING)
+        async function acceptOrder(id) {
+            try {
+                const res = await fetch(`/api/chef/orders/${id}/accept`, {
+                    method: "POST", 
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+                if (res.ok) {
+                    loadKitchenOrders();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // 2. Маркировать как ГОТОВО (Статус -> READY). 
+        // Элемент мгновенно исчезает с экрана, а бэкенд шлет WS-нотификацию официанту
+        async function completeOrder(id) {
+            const ticketElement = document.getElementById(`ticket-${id}`);
+            if (ticketElement) {
+                ticketElement.classList.add('fade-out'); // Красивая плавная анимация ухода с раздачи
+            }
+
+            try {
+                const res = await fetch(`/api/chef/orders/${id}/ready`, {
+                    method: "POST", 
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+                
+                if (res.ok) {
+                    // Локально убираем из памяти сразу, не дожидаясь ответа сети для моментального UX
+                    localOrdersCache = localOrdersCache.filter(o => o.id !== id);
+                    setTimeout(renderTickets, 250);
+                } else {
+                    loadKitchenOrders(); // Откатываем если сервер вернул ошибку
+                }
+            } catch (err) {
+                loadKitchenOrders();
+            }
+        }
+
+        // Логика Undo / Redo
+        async function executeHistoryAction(action) {
+            try {
+                const res = await fetch(`/api/chef/${action}`, {
+                    method: "POST", 
+                    headers: { "Authorization": "Bearer " + TOKEN }
+                });
+                if (res.ok) {
+                    loadKitchenOrders();
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // WebSocket шина для мгновенного появления новых заказов (минуя задержки пуллинга)
+        function connectKitchenWS() {
+            const ws = new WebSocket(`ws://${window.location.host}/api/chef/ws?token=${TOKEN}`);
+
+            ws.onmessage = function(event) {
+                try {
+                    const msg = JSON.parse(event.data);
+                    // Если пришел новый заказ от клиента или официанта — обновляем KDS экран
+                    if (msg.event === "new_order" || msg.event === "order_updated") {
+                        loadKitchenOrders();
+                        playKitchenAlertSound();
+                    }
+                } catch (e) {
+                    console.empty();
+                }
+            };
+
+            ws.onclose = function() {
+                setTimeout(connectKitchenWS, 4000); // Автоматический реконнект
+            };
+        }
+
+        // Звуковое оповещение поваров о новом заказе в тикет-принтере KDS
+        function playKitchenAlertSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.type = 'triangle'; // Более глубокий кухонный гонг вместо писка
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); 
+                gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.35);
+            } catch (e) {
+                console.log("Ожидание клика для активации аудио-движка.");
+            }
+        }
+
+        // Запуск монитора
+        initKitchen();
+    </script>
+</body>
+</html>
